@@ -8,6 +8,7 @@ blueprint:
       description: The Aqara ZNXNKG02LM Knob entity (from Zigbee2MQTT)
       selector:
         entity:
+          integration: mqtt
           domain: sensor
     light_entity:
       name: Light entity
@@ -27,7 +28,7 @@ blueprint:
 
 trigger:
   - platform: mqtt
-    topic: zigbee2mqtt/+/action
+    topic: zigbee2mqtt/!input knob/action
     payload: rotate_right
 
 condition:
@@ -40,5 +41,4 @@ action:
       entity_id: !input light_entity
     data:
       color_temp: >
-        {% set current_temp = state_attr(input.light_entity, 'color_temp') | int %}
-        {{ [current_temp + step_size, 500] | min }}
+        {{ state_attr(input.light_entity, 'color_temp') | int + step_size | min(500) }}
