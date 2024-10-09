@@ -1,14 +1,13 @@
 blueprint:
-  name: Zigbee2MQTT Aqara Knob Temperature Adjustment with Button Press and Rotation
-  description: 'Increase color temperature by turning the Aqara Knob right and pressing the button using Zigbee2MQTT'
+  name: Zigbee2MQTT Aqara Knob - Adjust Color Temperature on Rotate Right and Hold
+  description: 'Increase color temperature by rotating the Aqara Knob right while holding the button (Zigbee2MQTT)'
   domain: automation
   input:
     knob:
       name: Aqara Knob
-      description: The Aqara ZNXNKG02LM Knob entity
+      description: The Aqara ZNXNKG02LM Knob entity (from Zigbee2MQTT)
       selector:
         entity:
-          integration: mqtt
           domain: sensor
     light_entity:
       name: Light entity
@@ -17,27 +16,29 @@ blueprint:
         entity:
           domain: light
     step_size:
-      name: Step size
-      description: "Temperature step to increase in Kelvin (Default: 50)"
+      name: Step size (Kelvin)
+      description: "The amount to increase color temperature with each step (default: 50)"
       default: 50
       selector:
         number:
           min: 10
           max: 100
           unit_of_measurement: kelvin
-  trigger:
-    - platform: mqtt
-      topic: zigbee2mqtt/!input knob/action
-      payload: rotate_right
-  condition:
-    - condition: template
-      value_template: "{{ trigger.payload_json.action == 'rotate_right' and trigger.payload_json.button == 'hold' }}"
-  action:
-    - service: light.turn_on
-      target:
-        entity_id: !input light_entity
-      data_template:
-        color_temp: >
-          {% set current_temp = state_attr(input.light_entity, 'color_temp') %}
-          {{ [current_temp + step_size, 500].min() }}
-mode: single
+
+trigger:
+  - platform: mqtt
+    topic: zigbee2mqtt/+/action
+    payload: rotate_right
+
+condition:
+  - condition: template
+    value_template: "{{ trigger.payload_json.action == 'rotate_right' and trigger.payload_json.action_button == 'hold' }}"
+
+action:
+  - service: light.turn_on
+    target:
+      entity_id: !input light_entity
+    data:
+      color_temp: >
+        {% set current_temp = state_attr(input.light_entity, 'color_temp') | int %}
+        {{ [current_temp + step_size, 500] | min }}
